@@ -4,6 +4,8 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
   LineChart, Line, ResponsiveContainer, CartesianGrid
 } from "recharts";
+import { initializeSync } from './services/dataSync';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 
 // ═══════════════════════════════ STYLES ════════════════════════════════════
 const STYLE = `
@@ -1051,6 +1053,10 @@ export default function App(){
     callClaude("You are a knowledgeable Muslim. Share ONE short inspiring Quran verse in English translation related to patience, gratitude, consistency, or self-improvement. Format exactly: 'Translation...' — Surah Name (Chapter:Verse). Keep translation under 14 words.","Give me an inspiring Quran verse for today.")
       .then(setQuran).catch(()=>setQuran("'Verily, with hardship comes ease.' — Ash-Sharh (94:6)"));
   },[]);
+  useEffect(() => {
+    const cleanup = initializeSync();
+    return cleanup;
+  }, []);
   const PAGE={state,setState};
   const pages={
     dashboard:<Dashboard {...PAGE}/>,salah:<SalahTracker {...PAGE}/>,todos:<TodoList {...PAGE}/>,
@@ -1077,6 +1083,7 @@ export default function App(){
               <div className="tb-title">Huzaifa's Personal Productivity Manager</div>
               <div className="tb-date">{TODAY_STR}</div>
             </div>
+            <SyncStatusIndicator />
             <div className="qv">✦ {quran}</div>
           </div>
           <div className="content" key={tab}>{pages[tab]}</div>
