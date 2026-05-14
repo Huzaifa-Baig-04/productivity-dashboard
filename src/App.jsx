@@ -319,28 +319,24 @@ function PH({icon,title,desc}){return<div className="ph"><h1><span>{icon}</span>
 function LD(){return<span className="ld"><span>·</span><span>·</span><span>·</span></span>;}
 
 
-function App() {
+export default function App() {
 
   useEffect(() => {
 
     const testRef = ref(database, "test/message");
 
-    // Write data
     set(testRef, {
       text: "Hello Firebase"
     });
 
-    // Read realtime data
     onValue(testRef, (snapshot) => {
       console.log(snapshot.val());
     });
 
   }, []);
 
-
+  // your existing app code continues...
 }
-
-export default App;
 
 // ════════════════════════════════ DASHBOARD ════════════════════════════════
 function Dashboard({state,setState}){
