@@ -7,8 +7,11 @@ import { getAuth } from 'firebase/auth';
 // Replace with your Firebase project credentials
 // ═══════════════════════════════════════════════════════════════════════════
 
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY";
+console.log("Firebase API key loaded:", apiKey === "YOUR_API_KEY" ? apiKey : `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`);
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  apiKey,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-app.firebaseapp.com",
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://your-app.firebaseio.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project",
