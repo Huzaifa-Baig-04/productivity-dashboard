@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { initializeSync, pushDashboardMetrics } from './services/dataSync';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
-import { listenToAuthState, loginUser, registerUser, logoutUser } from './services/authService';
+import { listenToAuthState, loginUser, logoutUser } from './services/authService';
 import { getCurrentUserId } from './services/authService';
 
 // ═══════════════════════════════ STYLES ════════════════════════════════════
@@ -1033,7 +1033,6 @@ function Analytics({state}){
 export default function App(){
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isLoginMode, setIsLoginMode] = useState(true);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -1061,18 +1060,6 @@ export default function App(){
     }
     setAuthError("");
     const result = await loginUser(authEmail, authPassword);
-    if (!result.success) {
-      setAuthError(result.error);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!authEmail || !authPassword) {
-      setAuthError("Please fill in all fields");
-      return;
-    }
-    setAuthError("");
-    const result = await registerUser(authEmail, authPassword);
     if (!result.success) {
       setAuthError(result.error);
     }
@@ -1107,7 +1094,7 @@ export default function App(){
             value={authEmail}
             onChange={(e) => setAuthEmail(e.target.value)}
             style={{width:"100%",background:"#1C2333",border:"1px solid #30363D",borderRadius:8,padding:"10px 13px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:"#F0F6FC",marginBottom:12,outline:"none",boxSizing:"border-box"}}
-            onKeyPress={(e) => e.key === "Enter" && (isLoginMode ? handleLogin() : handleRegister())}
+            onKeyPress={(e) => e.key === "Enter" && handleLogin()}
           />
           
           <input
@@ -1116,7 +1103,7 @@ export default function App(){
             value={authPassword}
             onChange={(e) => setAuthPassword(e.target.value)}
             style={{width:"100%",background:"#1C2333",border:"1px solid #30363D",borderRadius:8,padding:"10px 13px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:"#F0F6FC",marginBottom:12,outline:"none",boxSizing:"border-box"}}
-            onKeyPress={(e) => e.key === "Enter" && (isLoginMode ? handleLogin() : handleRegister())}
+            onKeyPress={(e) => e.key === "Enter" && handleLogin()}
           />
 
           {authError && (
@@ -1126,17 +1113,10 @@ export default function App(){
           )}
 
           <button
-            onClick={isLoginMode ? handleLogin : handleRegister}
-            style={{width:"100%",background:"#10B981",color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:12}}
+            onClick={handleLogin}
+            style={{width:"100%",background:"#10B981",color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}
           >
-            {isLoginMode ? "Login" : "Register"}
-          </button>
-
-          <button
-            onClick={() => { setIsLoginMode(!isLoginMode); setAuthError(""); }}
-            style={{width:"100%",background:"#1C2333",color:"#8B949E",border:"1px solid #30363D",borderRadius:8,padding:"10px 18px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}
-          >
-            {isLoginMode ? "Need an account? Register" : "Already have an account? Login"}
+            Login
           </button>
         </div>
       </div>
