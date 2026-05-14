@@ -6,7 +6,6 @@ import {
 } from "recharts";
 import { initializeSync } from './services/dataSync';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
-import { useEffect } from "react";
 import { ref, set, onValue } from "firebase/database";
 import { database } from "./firebase";
 
@@ -319,7 +318,7 @@ function PH({icon,title,desc}){return<div className="ph"><h1><span>{icon}</span>
 function LD(){return<span className="ld"><span>·</span><span>·</span><span>·</span></span>;}
 
 
-export default function App() {
+function App() {
 
   useEffect(() => {
 
@@ -335,15 +334,21 @@ export default function App() {
 
   }, []);
 
-  // your existing app code continues...
+  return (
+    <div>
+      Firebase Test
+    </div>
+  );
 }
+
+export default App;
 
 // ════════════════════════════════ DASHBOARD ════════════════════════════════
 function Dashboard({state,setState}){
   const salahDone=Object.values(state.todaySalah).filter(Boolean).length;
   const tasksDone=state.todos.filter(t=>t.done).length;
   const totalStudy=state.study.reduce((a,s)=>a+s.hours,0).toFixed(1);
-  const wkDone=state.workouts.filter(w=>w.done).length;import { useEffect } from "react";
+  const wkDone=state.workouts.filter(w=>w.done).length;
   const salahPct=Math.round((salahDone/5)*100);
   const [motivation,setMotivation]=useState("");
   const [motLoading,setMotLoading]=useState(false);
