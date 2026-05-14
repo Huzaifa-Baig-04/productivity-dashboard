@@ -4,10 +4,10 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
   LineChart, Line, ResponsiveContainer, CartesianGrid
 } from "recharts";
-import { initializeSync } from './services/dataSync';
+import { initializeSync, pushDashboardMetrics } from './services/dataSync';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
-import { ref, set, onValue } from "firebase/database";
-import { database } from "./firebase";
+import { listenToAuthState, loginUser, registerUser, logoutUser } from './services/authService';
+import { getCurrentUserId } from './services/authService';
 
 // ═══════════════════════════════ STYLES ════════════════════════════════════
 const STYLE = `
@@ -317,31 +317,6 @@ function SC({num,label,icon,color=EM}){return<div className="sc"><div style={{fo
 function PH({icon,title,desc}){return<div className="ph"><h1><span>{icon}</span>{title}</h1>{desc&&<p>{desc}</p>}</div>;}
 function LD(){return<span className="ld"><span>·</span><span>·</span><span>·</span></span>;}
 
-
-function App() {
-
-  useEffect(() => {
-
-    const testRef = ref(database, "test/message");
-
-    set(testRef, {
-      text: "Hello Firebase"
-    });
-
-    onValue(testRef, (snapshot) => {
-      console.log(snapshot.val());
-    });
-
-  }, []);
-
-  return (
-    <div>
-      Firebase Test
-    </div>
-  );
-}
-
-export default App;
 
 // ════════════════════════════════ DASHBOARD ════════════════════════════════
 function Dashboard({state,setState}){
@@ -1056,6 +1031,125 @@ function Analytics({state}){
 
 // ════════════════════════════════ APP ═════════════════════════════════════
 export default function App(){
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [syncCleanup, setSyncCleanup] = useState(null);
+
+  // Listen to auth state
+  useEffect(() => {
+    const unsubscribe = listenToAuthState((authState) => {
+      setAuthUser(authState.authenticated ? authState : null);
+      setAuthLoading(false);
+      
+      // Initialize sync when user logs in
+      if (authState.authenticated) {
+        const cleanup = initializeSync();
+        setSyncCleanup(() => cleanup);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleLogin = async () => {
+    if (!authEmail || !authPassword) {
+      setAuthError("Please fill in all fields");
+      return;
+    }
+    setAuthError("");
+    const result = await loginUser(authEmail, authPassword);
+    if (!result.success) {
+      setAuthError(result.error);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!authEmail || !authPassword) {
+      setAuthError("Please fill in all fields");
+      return;
+    }
+    setAuthError("");
+    const result = await registerUser(authEmail, authPassword);
+    if (!result.success) {
+      setAuthError(result.error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    if (syncCleanup) syncCleanup();
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#0D1117",color:"#F0F6FC"}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:20}}>⏳ Loading...</div>
+          <div style={{fontSize:14,color:"#8B949E"}}>Checking authentication...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#0D1117",color:"#F0F6FC",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+        <div style={{background:"#161B22",border:"1px solid #30363D",borderRadius:14,padding:32,maxWidth:400,width:"100%",margin:16}}>
+          <div style={{fontSize:28,fontWeight:800,marginBottom:8,textAlign:"center"}}>Huzaifa OS</div>
+          <div style={{fontSize:12,color:"#8B949E",marginBottom:28,textAlign:"center"}}>Productivity Manager with Sync</div>
+          
+          <input
+            type="email"
+            placeholder="Email"
+            value={authEmail}
+            onChange={(e) => setAuthEmail(e.target.value)}
+            style={{width:"100%",background:"#1C2333",border:"1px solid #30363D",borderRadius:8,padding:"10px 13px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:"#F0F6FC",marginBottom:12,outline:"none",boxSizing:"border-box"}}
+            onKeyPress={(e) => e.key === "Enter" && (isLoginMode ? handleLogin() : handleRegister())}
+          />
+          
+          <input
+            type="password"
+            placeholder="Password"
+            value={authPassword}
+            onChange={(e) => setAuthPassword(e.target.value)}
+            style={{width:"100%",background:"#1C2333",border:"1px solid #30363D",borderRadius:8,padding:"10px 13px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:"#F0F6FC",marginBottom:12,outline:"none",boxSizing:"border-box"}}
+            onKeyPress={(e) => e.key === "Enter" && (isLoginMode ? handleLogin() : handleRegister())}
+          />
+
+          {authError && (
+            <div style={{background:"rgba(239,68,68,0.15)",color:"#EF4444",borderRadius:8,padding:10,marginBottom:16,fontSize:12}}>
+              {authError}
+            </div>
+          )}
+
+          <button
+            onClick={isLoginMode ? handleLogin : handleRegister}
+            style={{width:"100%",background:"#10B981",color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:12}}
+          >
+            {isLoginMode ? "Login" : "Register"}
+          </button>
+
+          <button
+            onClick={() => { setIsLoginMode(!isLoginMode); setAuthError(""); }}
+            style={{width:"100%",background:"#1C2333",color:"#8B949E",border:"1px solid #30363D",borderRadius:8,padding:"10px 18px",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}
+          >
+            {isLoginMode ? "Need an account? Register" : "Already have an account? Login"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppDashboard onLogout={handleLogout} />
+  );
+}
+
+function AppDashboard({ onLogout }) {
+  const userId = getCurrentUserId();
   const [tab,setTab]=useState("dashboard");
   const [sideOpen,setSideOpen]=useState(false);
   const [state,setState]=useState(() => {
@@ -1074,17 +1168,40 @@ export default function App(){
     }
   });
   const [quran,setQuran]=useState("Loading today's verse…");
+  
+  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('huzaifa-os-state', JSON.stringify(state));
   }, [state]);
+
+  // Sync to Firebase
+  useEffect(() => {
+    if (userId && state) {
+      const syncInterval = setInterval(() => {
+        pushDashboardMetrics(userId, {
+          todos: state.todos?.length || 0,
+          completedTodos: state.todos?.filter(t => t.done).length || 0,
+          salah: state.todaySalah || {},
+          workouts: state.workouts || [],
+          habits: state.habits || [],
+          timestamp: Date.now()
+        }).catch(err => console.error('Sync error:', err));
+      }, 10000); // Sync every 10 seconds
+      
+      return () => clearInterval(syncInterval);
+    }
+  }, [userId, state]);
+
   useEffect(()=>{
     callClaude("You are a knowledgeable Muslim. Share ONE short inspiring Quran verse in English translation related to patience, gratitude, consistency, or self-improvement. Format exactly: 'Translation...' — Surah Name (Chapter:Verse). Keep translation under 14 words.","Give me an inspiring Quran verse for today.")
       .then(setQuran).catch(()=>setQuran("'Verily, with hardship comes ease.' — Ash-Sharh (94:6)"));
   },[]);
+
   useEffect(() => {
     const cleanup = initializeSync();
     return cleanup;
   }, []);
+
   const PAGE={state,setState};
   const pages={
     dashboard:<Dashboard {...PAGE}/>,salah:<SalahTracker {...PAGE}/>,todos:<TodoList {...PAGE}/>,
@@ -1104,6 +1221,7 @@ export default function App(){
             </div>
           ))}
           <div className="sb-tog" onClick={()=>setSideOpen(o=>!o)} title="Toggle sidebar">{sideOpen?"◀":"▶"}</div>
+          <div className="sb-tog" onClick={onLogout} title="Logout" style={{marginTop:8}}>🚪</div>
         </nav>
         <div className={`main${sideOpen?" shift":""}`}>
           <div className="topbar">
