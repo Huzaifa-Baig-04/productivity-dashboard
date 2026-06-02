@@ -1157,6 +1157,7 @@ function AppDashboard({ onLogout }) {
   // Sync to Firebase
   useEffect(() => {
     if (userId && state) {
+      // Push state to Firebase every 3 seconds (faster sync)
       const syncInterval = setInterval(() => {
         pushDashboardMetrics(userId, {
           todos: state.todos?.length || 0,
@@ -1164,13 +1165,33 @@ function AppDashboard({ onLogout }) {
           salah: state.todaySalah || {},
           workouts: state.workouts || [],
           habits: state.habits || [],
+          todos_list: state.todos || [],
+          habits_list: state.habits || [],
           timestamp: Date.now()
         }).catch(err => console.error('Sync error:', err));
-      }, 10000); // Sync every 10 seconds
+      }, 3000); // Sync every 3 seconds for real-time feel
       
+      console.log('✓ Sync started for user:', userId);
       return () => clearInterval(syncInterval);
     }
   }, [userId, state]);
+
+  // Listen for real-time updates from other devices
+  useEffect(() => {
+    if (userId) {
+      const { listenToAggregatedMetrics } = require('./services/dataSync');
+      const listenerId = listenToAggregatedMetrics(userId, (metrics) => {
+        console.log('📱 Received metrics from other device:', metrics);
+        // Optionally update state with metrics from other devices
+        // This is passive - just logging for now
+      });
+      
+      return () => {
+        const { removeListener } = require('./services/dataSync');
+        removeListener(listenerId);
+      };
+    }
+  }, [userId]);
 
   useEffect(()=>{
     callClaude("You are a knowledgeable Muslim. Share ONE short inspiring Quran verse in English translation related to patience, gratitude, consistency, or self-improvement. Format exactly: 'Translation...' — Surah Name (Chapter:Verse). Keep translation under 14 words.","Give me an inspiring Quran verse for today.")
